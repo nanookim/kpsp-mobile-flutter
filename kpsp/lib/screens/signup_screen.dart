@@ -3,6 +3,7 @@ import 'package:icons_plus/icons_plus.dart';
 import 'package:kpsp/screens/sigin_screen.dart';
 import 'package:kpsp/theme/theme.dart';
 import 'package:kpsp/widgets/custom_scaffold.dart';
+import 'package:kpsp/services/api_service.dart'; // 🔹 API Service
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -13,7 +14,95 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formSignupKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
   bool agreePersonalData = true;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  /// 🔹 Fungsi untuk menampilkan dialog sukses dengan animasi
+  void _showSuccessDialog() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: "Berhasil",
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, _, __) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.green, size: 30),
+              SizedBox(width: 10),
+              Text("Berhasil!"),
+            ],
+          ),
+          content: const Text(
+            "Registrasi akun berhasil. Silakan login dengan akun Anda.",
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // tutup dialog
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (e) => const SignInScreen()),
+                );
+              },
+              child: const Text(
+                "OK",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+          child: child,
+        );
+      },
+    );
+  }
+
+  /// 🔹 Fungsi untuk handle register
+  Future<void> _handleRegister() async {
+    if (_formSignupKey.currentState!.validate() && agreePersonalData) {
+      final api = ApiService();
+      final result = await api.register(
+        nameController.text,
+        emailController.text,
+        passwordController.text,
+      );
+
+      if (result.containsKey('data')) {
+        _showSuccessDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? "Registrasi gagal")),
+        );
+      }
+    } else if (!agreePersonalData) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the processing of personal data'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
@@ -32,13 +121,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               child: SingleChildScrollView(
-                // get started form
                 child: Form(
                   key: _formSignupKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // get started text
                       Text(
                         'Get Started',
                         style: TextStyle(
@@ -48,90 +135,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
                       const SizedBox(height: 40.0),
-                      // full name
+
+                      // Full name
                       TextFormField(
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter Full name';
-                          }
-                          return null;
-                        },
+                        controller: nameController,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Please enter Full name'
+                            : null,
                         decoration: InputDecoration(
                           label: const Text('Full Name'),
                           hintText: 'Enter Full Name',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25.0),
-                      // email
+
+                      // Email
                       TextFormField(
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter Email';
-                          }
-                          return null;
-                        },
+                        controller: emailController,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Please enter Email'
+                            : null,
                         decoration: InputDecoration(
                           label: const Text('Email'),
                           hintText: 'Enter Email',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25.0),
-                      // password
+
+                      // Password
                       TextFormField(
+                        controller: passwordController,
                         obscureText: true,
                         obscuringCharacter: '*',
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter Password';
-                          }
-                          return null;
-                        },
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Please enter Password'
+                            : null,
                         decoration: InputDecoration(
                           label: const Text('Password'),
                           hintText: 'Enter Password',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(
-                              color: Colors.black12, // Default border color
-                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
                       const SizedBox(height: 25.0),
-                      // i agree to the processing
+
+                      // Agreement
                       Row(
                         children: [
                           Checkbox(
@@ -157,33 +215,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ],
                       ),
                       const SizedBox(height: 25.0),
-                      // signup button
+
+                      // Signup button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formSignupKey.currentState!.validate() &&
-                                agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Processing Data'),
-                                ),
-                              );
-                            } else if (!agreePersonalData) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please agree to the processing of personal data',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: _handleRegister,
                           child: const Text('Sign up'),
                         ),
                       ),
                       const SizedBox(height: 30.0),
-                      // sign up divider
+
+                      // Divider
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -194,10 +237,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           const Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 0,
-                              horizontal: 10,
-                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
                               'Sign up with',
                               style: TextStyle(color: Colors.black45),
@@ -212,7 +252,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ],
                       ),
                       const SizedBox(height: 30.0),
-                      // sign up social media logo
+
+                      // Social login
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -223,7 +264,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ],
                       ),
                       const SizedBox(height: 25.0),
-                      // already have an account
+
+                      // Already have account
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
