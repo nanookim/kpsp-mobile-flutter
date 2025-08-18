@@ -19,6 +19,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
 
   bool agreePersonalData = true;
+  // Password
+  bool _obscurePassword = true; // 👁 state untuk show/hide password
+  String _passwordStrength = ""; // 🔥 indikator strength password
+  Color _strengthColor = Colors.red;
 
   @override
   void dispose() {
@@ -156,9 +160,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Email
                       TextFormField(
                         controller: emailController,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please enter Email'
-                            : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter Email';
+                          }
+                          final emailRegex = RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          );
+                          if (!emailRegex.hasMatch(value)) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
+
                         decoration: InputDecoration(
                           label: const Text('Email'),
                           hintText: 'Enter Email',
@@ -173,11 +187,51 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       // Password
                       TextFormField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         obscuringCharacter: '*',
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Please enter Password'
-                            : null,
+                        onChanged: (value) {
+                          setState(() {
+                            // Regex strength check
+                            if (value.isEmpty) {
+                              _passwordStrength = "";
+                            } else if (value.length < 8) {
+                              _passwordStrength = "Too short";
+                              _strengthColor = Colors.red;
+                            } else {
+                              final strongRegex = RegExp(
+                                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$',
+                              );
+                              final mediumRegex = RegExp(
+                                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$',
+                              );
+
+                              if (strongRegex.hasMatch(value)) {
+                                _passwordStrength = "Strong 💪";
+                                _strengthColor = Colors.green;
+                              } else if (mediumRegex.hasMatch(value)) {
+                                _passwordStrength = "Medium 👍";
+                                _strengthColor = Colors.orange;
+                              } else {
+                                _passwordStrength = "Weak 👎";
+                                _strengthColor = Colors.red;
+                              }
+                            }
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter Password';
+                          }
+                          // Minimal 8 karakter, huruf besar, kecil, angka, simbol
+                          final passwordRegex = RegExp(
+                            r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$',
+                          );
+
+                          if (!passwordRegex.hasMatch(value)) {
+                            return 'Password must be at least 8 characters,\ninclude uppercase, lowercase, number, and symbol';
+                          }
+                          return null;
+                        },
                         decoration: InputDecoration(
                           label: const Text('Password'),
                           hintText: 'Enter Password',
@@ -185,8 +239,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 5),
+
+                      // 🔥 Password strength indicator
+                      if (_passwordStrength.isNotEmpty)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: LinearProgressIndicator(
+                                  value: _passwordStrength == "Weak 👎"
+                                      ? 0.3
+                                      : _passwordStrength == "Medium 👍"
+                                      ? 0.6
+                                      : 1.0,
+                                  color: _strengthColor,
+                                  backgroundColor: Colors.grey[300],
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                _passwordStrength,
+                                style: TextStyle(
+                                  color: _strengthColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 25.0),
 
                       // Agreement
