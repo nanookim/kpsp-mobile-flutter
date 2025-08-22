@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:kpsp/screens/main_menu_screen.dart';
 import 'package:kpsp/screens/signup_screen.dart';
 import 'package:kpsp/theme/theme.dart';
 import 'package:kpsp/widgets/custom_scaffold.dart';
+import 'package:kpsp/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -13,7 +16,86 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formSignInKey = GlobalKey<FormState>();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
   bool rememberPassword = true;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLogin(); // 🔹 load email & password tersimpan (kalau ada)
+  }
+
+  /// 🔹 Ambil data login yang tersimpan di SharedPreferences
+  Future<void> _loadSavedLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('savedEmail');
+    final savedPassword = prefs.getString('savedPassword');
+
+    if (savedEmail != null && savedPassword != null) {
+      setState(() {
+        emailController.text = savedEmail;
+        passwordController.text = savedPassword;
+        rememberPassword = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  /// 🔹 Fungsi untuk handle login
+  Future<void> _handleLogin() async {
+    if (_formSignInKey.currentState!.validate()) {
+      setState(() => _loading = true);
+
+      final api = ApiService();
+      final result = await api.login(
+        emailController.text,
+        passwordController.text,
+      );
+
+      setState(() => _loading = false);
+
+      if (result != null && result is Map && result.containsKey('token')) {
+        final prefs = await SharedPreferences.getInstance();
+        final userData = result['user'];
+
+        // ✅ Simpan data user
+        await prefs.setString('token', result['token']);
+        await prefs.setString('userName', userData['username'] ?? 'Pengguna');
+        await prefs.setString('userEmail', userData['email'] ?? '-');
+        await prefs.setString('userNim', userData['nim'] ?? 'Tidak ada NIM');
+
+        // ✅ Simpan login kalau centang Remember Me
+        if (rememberPassword) {
+          await prefs.setString('savedEmail', emailController.text);
+          await prefs.setString('savedPassword', passwordController.text);
+        } else {
+          await prefs.remove('savedEmail');
+          await prefs.remove('savedPassword');
+        }
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? "Login gagal")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +129,18 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       ),
                       const SizedBox(height: 40.0),
+
+                      /// Email Field
                       TextFormField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please Enter Email';
+                            return 'Please enter email';
+                          }
+                          final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                          if (!emailRegex.hasMatch(value)) {
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -59,21 +149,28 @@ class _SignInScreenState extends State<SignInScreen> {
                           hintText: 'Enter Email',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 25.0),
+
+                      /// Password Field
                       TextFormField(
+                        controller: passwordController,
                         obscureText: true,
                         obscuringCharacter: '*',
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please Enter Password';
+                            return 'Please enter password';
+                          }
+                          if (value.length < 8) {
+                            return 'Password must be at least 8 characters';
                           }
                           return null;
                         },
@@ -82,15 +179,18 @@ class _SignInScreenState extends State<SignInScreen> {
                           hintText: 'Enter Password',
                           hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.black12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderSide: const BorderSide(color: Colors.black12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 25.0),
+
+                      /// Remember Me + Forget Password
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -100,7 +200,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                 value: rememberPassword,
                                 onChanged: (bool? value) {
                                   setState(() {
-                                    rememberPassword = value!;
+                                    rememberPassword = value ?? false;
                                   });
                                 },
                                 activeColor: lightColorScheme.primary,
@@ -122,32 +222,25 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 25.0),
+
+                      /// Sign In Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formSignInKey.currentState!.validate() &&
-                                rememberPassword) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Processing Data'),
-                                ),
-                              );
-                            } else if (!rememberPassword) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please agree to the processing of personal data',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text('Sign In'),
+                          onPressed: _loading ? null : _handleLogin,
+                          child: _loading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text('Sign In'),
                         ),
                       ),
+
                       const SizedBox(height: 25.0),
+
+                      /// Divider
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -158,10 +251,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                           ),
                           const Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 0,
-                              horizontal: 10,
-                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
                               'Sign up with',
                               style: TextStyle(color: Colors.black45),
@@ -175,7 +265,10 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 25.0),
+
+                      /// Social login buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -185,8 +278,10 @@ class _SignInScreenState extends State<SignInScreen> {
                           Brand(Brands.apple_logo),
                         ],
                       ),
+
                       const SizedBox(height: 25.0),
-                      // don't have an account
+
+                      /// Don't have an account
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+// import 'package:kpsp/screens/dashboard_screen.dart';
 import 'package:kpsp/screens/welcome_screen.dart';
+import 'package:kpsp/screens/main_menu_screen.dart';
 import 'package:kpsp/theme/theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  Future<bool> _checkLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    return token != null;
+  }
 
   // This widget is the root of your application.
   @override
@@ -16,7 +26,21 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: LightMode,
-      home: WelcomeScreen(),
+      home: FutureBuilder<bool>(
+        future: _checkLogin(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // tampil loading screen dulu
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          } else {
+            // cek hasil token
+            final isLoggedIn = snapshot.data ?? false;
+            return isLoggedIn ? const MainMenuScreen() : const WelcomeScreen();
+          }
+        },
+      ),
     );
   }
 }

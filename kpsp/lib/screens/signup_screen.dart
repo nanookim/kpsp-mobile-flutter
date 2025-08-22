@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
-import 'package:kpsp/screens/sigin_screen.dart';
+import 'package:kpsp/screens/signin_screen.dart';
+
 import 'package:kpsp/theme/theme.dart';
 import 'package:kpsp/widgets/custom_scaffold.dart';
 import 'package:kpsp/services/api_service.dart'; // 🔹 API Service
@@ -149,7 +150,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: InputDecoration(
                           label: const Text('Full Name'),
                           hintText: 'Enter Full Name',
-                          hintStyle: const TextStyle(color: Colors.black26),
+                          prefixIcon: const Icon(Icons.person_outline),
+                          // hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -176,7 +178,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: InputDecoration(
                           label: const Text('Email'),
                           hintText: 'Enter Email',
-                          hintStyle: const TextStyle(color: Colors.black26),
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          // hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -235,7 +238,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: InputDecoration(
                           label: const Text('Password'),
                           hintText: 'Enter Password',
-                          hintStyle: const TextStyle(color: Colors.black26),
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          // hintStyle: const TextStyle(color: Colors.black26),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
