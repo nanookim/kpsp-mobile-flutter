@@ -4,7 +4,7 @@ import 'package:kpsp/screens/main_menu_screen.dart';
 import 'package:kpsp/screens/signup_screen.dart';
 import 'package:kpsp/theme/theme.dart';
 import 'package:kpsp/widgets/custom_scaffold.dart';
-import 'package:kpsp/services/api_service.dart';
+import 'package:kpsp/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -25,57 +25,41 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSavedLogin(); // 🔹 load email & password tersimpan (kalau ada)
+    _loadSavedLogin();
   }
 
-  /// 🔹 Ambil data login yang tersimpan di SharedPreferences
+  /// 🔹 Ambil data login tersimpan
   Future<void> _loadSavedLogin() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('savedEmail');
-    final savedPassword = prefs.getString('savedPassword');
-
-    if (savedEmail != null && savedPassword != null) {
-      setState(() {
-        emailController.text = savedEmail;
-        passwordController.text = savedPassword;
-        rememberPassword = true;
-      });
-    }
+    setState(() {
+      emailController.text = prefs.getString('savedEmail') ?? '';
+      passwordController.text = prefs.getString('savedPassword') ?? '';
+      rememberPassword =
+          (prefs.getString('savedEmail') != null &&
+          prefs.getString('savedPassword') != null);
+    });
   }
 
-  @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  /// 🔹 Fungsi untuk handle login
+  /// 🔹 Handle Login
   Future<void> _handleLogin() async {
-    if (_formSignInKey.currentState!.validate()) {
-      setState(() => _loading = true);
+    if (!_formSignInKey.currentState!.validate()) return;
 
-      final api = ApiService();
+    setState(() => _loading = true);
+    final api = AuthService();
+
+    try {
       final result = await api.login(
-        emailController.text,
-        passwordController.text,
+        email: emailController.text.trim(),
+        password: passwordController.text,
       );
 
       setState(() => _loading = false);
 
-      if (result != null && result is Map && result.containsKey('token')) {
+      if (result['success'] == true) {
+        // Remember me
         final prefs = await SharedPreferences.getInstance();
-        final userData = result['user'];
-
-        // ✅ Simpan data user
-        await prefs.setString('token', result['token']);
-        await prefs.setString('userName', userData['username'] ?? 'Pengguna');
-        await prefs.setString('userEmail', userData['email'] ?? '-');
-        await prefs.setString('userNim', userData['nim'] ?? 'Tidak ada NIM');
-
-        // ✅ Simpan login kalau centang Remember Me
         if (rememberPassword) {
-          await prefs.setString('savedEmail', emailController.text);
+          await prefs.setString('savedEmail', emailController.text.trim());
           await prefs.setString('savedPassword', passwordController.text);
         } else {
           await prefs.remove('savedEmail');
@@ -85,16 +69,32 @@ class _SignInScreenState extends State<SignInScreen> {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const MainMenuScreen()),
+            MaterialPageRoute(
+              builder: (_) => const MainMenuScreen(showLoginSuccess: true),
+            ),
             (route) => false,
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? "Login gagal")),
+          SnackBar(
+            content: Text(result['message'] ?? "Login gagal, coba lagi."),
+          ),
         );
       }
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -219,6 +219,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                 color: lightColorScheme.primary,
                               ),
                             ),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Fitur belum tersedia"),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -268,14 +275,52 @@ class _SignInScreenState extends State<SignInScreen> {
 
                       const SizedBox(height: 25.0),
 
-                      /// Social login buttons
+                      /// Social login buttons (dummy)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Brand(Brands.facebook),
-                          Brand(Brands.twitterx),
-                          Brand(Brands.google),
-                          Brand(Brands.apple_logo),
+                          IconButton(
+                            onPressed: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Facebook login belum tersedia",
+                                    ),
+                                  ),
+                                ),
+                            icon: Brand(Brands.facebook),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Twitter login belum tersedia",
+                                    ),
+                                  ),
+                                ),
+                            icon: Brand(Brands.twitterx),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Google login belum tersedia",
+                                    ),
+                                  ),
+                                ),
+                            icon: Brand(Brands.google),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Apple login belum tersedia"),
+                                  ),
+                                ),
+                            icon: Brand(Brands.apple_logo),
+                          ),
                         ],
                       ),
 

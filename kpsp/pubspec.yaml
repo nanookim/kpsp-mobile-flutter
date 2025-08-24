@@ -39,6 +39,8 @@ dependencies:
   flutter_facebook_auth: ^6.0.3
   http: ^1.1.0
   shared_preferences: ^2.2.2
+  another_flushbar: ^1.12.30
+  intl: ^0.18.1
   
 dev_dependencies:
   flutter_test:

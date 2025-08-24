@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String baseUrl = "http://192.168.43.211:8000/api";
 
+  /// 🔹 Register
   Future<Map<String, dynamic>> register(
     String username,
     String email,
@@ -14,7 +15,7 @@ class ApiService {
       Uri.parse("$baseUrl/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
-        "username": username,
+        "username": username, // ✅ kirim "username" sesuai backend
         "email": email,
         "password": password,
       }),
@@ -23,7 +24,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  /// 🔹 Fungsi login
+  /// 🔹 Login
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
       Uri.parse("$baseUrl/login"),
@@ -34,10 +35,13 @@ class ApiService {
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200 && data["success"] == true) {
-      // Simpan token, nama, email ke SharedPreferences
+      // 🔹 Simpan token & user info ke SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString("token", data["token"]);
-      await prefs.setString("userName", data["user"]["username"]);
+      await prefs.setString(
+        "userName",
+        data["user"]["username"],
+      ); // ✅ konsisten "username"
       await prefs.setString("userEmail", data["user"]["email"]);
     }
 
