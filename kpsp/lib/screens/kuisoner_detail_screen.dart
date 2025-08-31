@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kpsp/screens/hasil_skrining_screen.dart';
 import '../services/set_pertanyaan_service.dart';
 
 class KuisonerDetailScreen extends StatefulWidget {
@@ -74,30 +75,14 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
           hasil['skor']?.toString() ?? result['skor']?.toString() ?? "-";
       final rekomendasi = hasil['rekomendasi'] ?? result['rekomendasi'] ?? "-";
 
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HasilSkriningScreen(
+            interpretasi: interpretasi,
+            skor: skor,
+            rekomendasi: rekomendasi,
           ),
-          title: const Text("📊 Hasil Skrining"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Interpretasi: $interpretasi"),
-              const SizedBox(height: 8),
-              Text("Skor: $skor"),
-              const SizedBox(height: 8),
-              Text("Rekomendasi: $rekomendasi"),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Tutup"),
-            ),
-          ],
         ),
       );
     } catch (e) {
