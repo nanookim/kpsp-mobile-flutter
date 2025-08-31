@@ -37,14 +37,9 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
     try {
       final data = await _service.fetchSets();
 
-      List<Map<String, dynamic>> availableSets = [];
-
-      for (var set in data) {
-        final detail = await _service.getSetWithQuestions(set['id']);
-        if (detail['skrining_terakhir'] == null) {
-          availableSets.add(set);
-        }
-      }
+      final availableSets = data
+          .where((set) => set['skrining_terakhir'] == null)
+          .toList();
 
       if (mounted) {
         setState(() {
