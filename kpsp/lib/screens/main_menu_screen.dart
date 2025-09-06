@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:kpsp/screens/PilihAnakScreen.dart';
 import 'package:kpsp/screens/child_form_screen.dart';
 import 'package:kpsp/screens/kuisoner_screen.dart';
 import 'package:kpsp/screens/main_child_screen.dart';
@@ -359,7 +360,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             } else {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const KuisonerScreen()),
+                MaterialPageRoute(builder: (_) => const PilihAnakScreen()),
               );
             }
           },

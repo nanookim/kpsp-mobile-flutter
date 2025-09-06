@@ -4,10 +4,10 @@ import '../api_config.dart';
 
 class SetPertanyaanService {
   /// Ambil semua set pertanyaan
-  Future<List<Map<String, dynamic>>> fetchSets() async {
+  Future<List<Map<String, dynamic>>> fetchSets(int childId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/set-pertanyaan'),
+        Uri.parse('${ApiConfig.baseUrl}/set-pertanyaan?id_anak=$childId'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -124,9 +124,10 @@ class SetPertanyaanService {
     }
   }
 
-  /// Submit jawaban user
+  // ---------------------------SUBMIT JAWABAN---------------------------
   Future<Map<String, dynamic>> submitJawaban(
     int setId,
+    int childId,
     Map<String, String> jawabanUser,
   ) async {
     try {
@@ -140,7 +141,10 @@ class SetPertanyaanService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'jawaban': jawabanUser}),
+        body: jsonEncode({
+          'id_anak': childId, // <--- kirim ke backend
+          'jawaban': jawabanUser,
+        }),
       );
 
       if (response.statusCode == 200) {

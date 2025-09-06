@@ -6,11 +6,12 @@ import '../services/set_pertanyaan_service.dart';
 class KuisonerDetailScreen extends StatefulWidget {
   final int setId;
   final String title;
-
+  final int childId;
   const KuisonerDetailScreen({
     super.key,
     required this.setId,
     required this.title,
+    required this.childId,
   });
 
   @override
@@ -58,10 +59,9 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
         (key, value) => MapEntry(key.toString(), value),
       );
 
-      debugPrint("📤 Jawaban user dikirim: $formattedJawaban");
-
       final result = await _service.submitJawaban(
         widget.setId,
+        widget.childId,
         formattedJawaban,
       );
 

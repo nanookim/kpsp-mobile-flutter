@@ -6,7 +6,13 @@ import '../services/set_pertanyaan_service.dart';
 import 'kuisoner_detail_screen.dart'; // import detail screen
 
 class KuisonerScreen extends StatefulWidget {
-  const KuisonerScreen({super.key});
+  final int childId; // ⬅️ tambah
+  final String childName; // ⬅️ tambah
+  const KuisonerScreen({
+    super.key,
+    required this.childId,
+    required this.childName,
+  });
 
   @override
   State<KuisonerScreen> createState() => _KuisonerScreenState();
@@ -35,7 +41,7 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
   Future<void> _loadData() async {
     setState(() => isLoading = true);
     try {
-      final data = await _service.fetchSets();
+      final data = await _service.fetchSets(widget.childId);
 
       final availableSets = data
           .where((set) => set['skrining_terakhir'] == null)
@@ -230,6 +236,7 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
                             builder: (_) => KuisonerDetailScreen(
                               setId: set['id'],
                               title: "Usia ${set['usia_dalam_bulan']} bln",
+                              childId: widget.childId,
                             ),
                           ),
                         );
