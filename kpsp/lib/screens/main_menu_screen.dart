@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:kpsp/screens/PilihAnakScreen.dart';
+import 'package:kpsp/screens/SkriningRiwayatScreen.dart';
 import 'package:kpsp/screens/child_form_screen.dart';
 import 'package:kpsp/screens/kuisoner_screen.dart';
 import 'package:kpsp/screens/main_child_screen.dart';
@@ -334,7 +335,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             if (childName == null) {
               _showFillChildDataDialog(context);
             } else {
-              // TODO: Navigasi Skrining
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => SkriningRiwayatScreen()),
+              );
             }
           },
         ),

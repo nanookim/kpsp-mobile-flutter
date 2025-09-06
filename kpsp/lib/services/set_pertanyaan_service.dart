@@ -156,4 +156,25 @@ class SetPertanyaanService {
       throw Exception("submitJawaban error: $e");
     }
   }
+
+  /// Ambil riwayat skrining anak
+  Future<List<Map<String, dynamic>>> fetchRiwayat(int childId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/set-pertanyaan/riwayat/$childId'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // backend return array skrining
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        throw Exception(data['message'] ?? 'Gagal mengambil riwayat skrining');
+      }
+    } catch (e) {
+      throw Exception("fetchRiwayat error: $e");
+    }
+  }
 }
