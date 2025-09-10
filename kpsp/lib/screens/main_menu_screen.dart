@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:kpsp/screens/GrafikScreen.dart';
 import 'package:kpsp/screens/PilihAnakScreen.dart';
 import 'package:kpsp/screens/SkriningRiwayatScreen.dart';
 import 'package:kpsp/screens/child_form_screen.dart';
 import 'package:kpsp/screens/kuisoner_screen.dart';
 import 'package:kpsp/screens/main_child_screen.dart';
 import 'package:kpsp/screens/profile_screen.dart';
+import 'package:kpsp/services/child_service.dart';
+import 'package:kpsp/services/set_pertanyaan_service.dart';
 
 // Palet warna yang lebih berani dan eksklusif
 class AppColors {
@@ -29,7 +32,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   String? childName = "Dina";
   int? childAge = 5;
   String? lastScreening = "Normal";
-
+  // ⬅️ Tambahkan ini
+  List<Map<String, dynamic>>? screenings;
   @override
   void initState() {
     super.initState();
@@ -342,18 +346,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             }
           },
         ),
-        _MenuItem(
-          icon: Icons.bar_chart_rounded,
-          label: "Grafik",
-          color: const Color(0xFF40E0D0),
-          onTap: () {
-            if (childName == null) {
-              _showFillChildDataDialog(context);
-            } else {
-              // TODO: Navigasi Grafik
-            }
-          },
-        ),
+
         _MenuItem(
           icon: Icons.note_alt_rounded,
           label: "Survey",
