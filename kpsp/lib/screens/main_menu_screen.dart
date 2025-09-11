@@ -110,7 +110,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
         onTap: (index) {
-          if (index == 2) {
+          if (index == 1) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -130,10 +130,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             icon: Icon(Icons.home_rounded),
             label: "Beranda",
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: "Riwayat",
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.bar_chart_rounded),
+          //   label: "Riwayat",
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_rounded),
             label: "Profil",
@@ -298,30 +298,30 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             }
           },
         ),
-        _MenuItem(
-          icon: Icons.notifications_active_rounded,
-          label: "Reminder",
-          color: const Color(0xFFDA70D6),
-          onTap: () {
-            if (childName == null) {
-              _showFillChildDataDialog(context);
-            } else {
-              // TODO: Navigasi Reminder
-            }
-          },
-        ),
-        _MenuItem(
-          icon: Icons.book_rounded,
-          label: "Edukasi",
-          color: const Color(0xFF3CB371),
-          onTap: () {
-            if (childName == null) {
-              _showFillChildDataDialog(context);
-            } else {
-              // TODO: Navigasi Edukasi
-            }
-          },
-        ),
+        // _MenuItem(
+        //   icon: Icons.notifications_active_rounded,
+        //   label: "Reminder",
+        //   color: const Color(0xFFDA70D6),
+        //   onTap: () {
+        //     if (childName == null) {
+        //       _showFillChildDataDialog(context);
+        //     } else {
+        //       // TODO: Navigasi Reminder
+        //     }
+        //   },
+        // ),
+        // _MenuItem(
+        //   icon: Icons.book_rounded,
+        //   label: "Edukasi",
+        //   color: const Color(0xFF3CB371),
+        //   onTap: () {
+        //     if (childName == null) {
+        //       _showFillChildDataDialog(context);
+        //     } else {
+        //       // TODO: Navigasi Edukasi
+        //     }
+        //   },
+        // ),
       ],
     );
   }
