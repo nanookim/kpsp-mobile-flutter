@@ -7,6 +7,7 @@ class KuisonerDetailScreen extends StatefulWidget {
   final int setId;
   final String title;
   final int childId;
+
   const KuisonerDetailScreen({
     super.key,
     required this.setId,
@@ -32,6 +33,12 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
     _loadSetDetail();
   }
 
+  /// Convert path backend menjadi full URL
+  String? getFullImageUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    return 'http://kpsp.himogi.my.id/storage/ilustrasi/$path'; // <-- ganti domain backend
+  }
+
   Future<void> _loadSetDetail() async {
     try {
       final data = await _service.getSetWithQuestions(widget.setId);
@@ -54,7 +61,6 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
 
   Future<void> _submitJawaban() async {
     try {
-      // ubah key int → string biar JSON object valid
       final formattedJawaban = _jawabanUser.map(
         (key, value) => MapEntry(key.toString(), value),
       );
@@ -177,10 +183,14 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final pertanyaan = setDetail!['pertanyaan'][index];
                   final pertanyaanId = pertanyaan['id'] as int;
+                  final urlIlustrasi = getFullImageUrl(
+                    pertanyaan['url_ilustrasi'],
+                  );
 
                   return _PertanyaanCard(
                     nomor: pertanyaan['nomor_urut'] ?? index + 1,
                     teks: pertanyaan['teks_pertanyaan'] ?? "-",
+                    urlIlustrasi: urlIlustrasi,
                     pertanyaanId: pertanyaanId,
                     selected: _jawabanUser[pertanyaanId],
                     onJawab: (id, jawaban) {
@@ -212,6 +222,7 @@ class _PertanyaanCard extends StatelessWidget {
   final String teks;
   final int pertanyaanId;
   final String? selected; // "ya" / "tidak"
+  final String? urlIlustrasi;
   final Function(int, String) onJawab;
 
   const _PertanyaanCard({
@@ -220,6 +231,7 @@ class _PertanyaanCard extends StatelessWidget {
     required this.pertanyaanId,
     required this.onJawab,
     this.selected,
+    this.urlIlustrasi,
   });
 
   @override
@@ -272,6 +284,25 @@ class _PertanyaanCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+
+            /// ILUSTRASI (hanya tampil kalau ada)
+            /// ILUSTRASI (hanya tampil kalau ada)
+            if (urlIlustrasi?.isNotEmpty ?? false)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    urlIlustrasi!, // aman karena sudah dicek isNotEmpty
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 12),
 
             /// Pilihan Ya / Tidak
