@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kpsp/screens/signin_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ================= PROFILE SCREEN =================
 class ProfileScreen extends StatefulWidget {
+  final String? fullName;
+  final String? userEmail;
   final String? childName;
   final int? childAge;
   final String? lastScreening;
@@ -12,6 +15,8 @@ class ProfileScreen extends StatefulWidget {
     this.childName,
     this.childAge,
     this.lastScreening,
+    this.fullName,
+    this.userEmail,
   });
 
   @override
@@ -32,19 +37,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ==== LOGOUT ====
-  void _logout(BuildContext context) {
-    // Clear data (simulasi)
+  void _logout(BuildContext context) async {
+    // 🔹 Hapus data login tersimpan (kalau ada)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    // 🔹 Kosongkan state anak
     setState(() {
       _childName = null;
       _childAge = null;
       _lastScreening = null;
     });
 
-    // Arahkan ke halaman login
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const SignInScreen()),
-    );
+    // 🔹 Arahkan ke SignInScreen & hapus semua route sebelumnya
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const SignInScreen()),
+        (route) => false, // ⬅️ semua route sebelumnya dihapus
+      );
+    }
   }
 
   // ==== EDIT PROFIL ====
@@ -79,36 +91,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // 🔹 Avatar user
             CircleAvatar(
               radius: 50,
               backgroundColor: Colors.blue.shade100,
               child: const Icon(Icons.person, size: 50, color: Colors.blue),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
+
+            // 🔹 Nama lengkap dari akun
             Text(
-              _childName ?? "Belum ada data",
+              widget.fullName ?? "Pengguna",
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
+
+            // 🔹 Email user
             Text(
-              _childAge != null ? "Usia: $_childAge tahun" : "Usia: -",
+              widget.userEmail ?? "-",
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            const SizedBox(height: 10),
-            Text(
-              "Hasil terakhir: ${_lastScreening ?? "-"}",
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
+            const Divider(height: 40),
+
             const SizedBox(height: 30),
 
-            // Tombol Edit
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text("Edit Profil Anak"),
-              onTap: () => _editProfile(context),
-            ),
-
-            // Tombol Logout
+            // 🔹 Tombol Edit dan Logout
+            // ListTile(
+            //   leading: const Icon(Icons.edit),
+            //   title: const Text("Edit Profil Anak"),
+            //   onTap: () => _editProfile(context),
+            // ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Logout"),

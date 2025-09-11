@@ -9,6 +9,7 @@ import 'package:kpsp/screens/main_child_screen.dart';
 import 'package:kpsp/screens/profile_screen.dart';
 import 'package:kpsp/services/child_service.dart';
 import 'package:kpsp/services/set_pertanyaan_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Palet warna yang lebih berani dan eksklusif
 class AppColors {
@@ -29,6 +30,8 @@ class MainMenuScreen extends StatefulWidget {
 }
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
+  String? fullName;
+  String? userEmail;
   String? childName = "Dina";
   int? childAge = 5;
   String? lastScreening = "Normal";
@@ -37,10 +40,15 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
+
     if (widget.showLoginSuccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final prefs = await SharedPreferences.getInstance();
+        final name = prefs.getString('userName') ?? "Pengguna";
+
         Flushbar(
-          message: "🎉 Login berhasil, selamat datang!",
+          message: "🎉 Login berhasil, selamat datang $name!",
           backgroundColor: AppColors.primaryLight,
           duration: const Duration(seconds: 3),
           margin: const EdgeInsets.all(16),
@@ -50,6 +58,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ).show(context);
       });
     }
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      fullName = prefs.getString('userName') ?? "Pengguna";
+      userEmail = prefs.getString('userEmail') ?? "-";
+    });
   }
 
   @override
@@ -85,21 +101,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (childName == null) {
-            _showFillChildDataDialog(context);
-          } else {
-            // TODO: aksi isi survey baru
-          }
-        },
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
-          "Isi Survey Baru",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-      ),
+
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.card,
         selectedItemColor: AppColors.primary,
@@ -113,6 +115,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => ProfileScreen(
+                  fullName: fullName, // ✅ pakai fullname user
+                  userEmail: userEmail,
                   childName: childName,
                   childAge: childAge,
                   lastScreening: lastScreening,
@@ -168,7 +172,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ),
             const SizedBox(height: 20),
             const Text(
-              "KPSP Pro",
+              "KPSP",
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -177,7 +181,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Selamat Datang Kembali, Dina!",
+              "Selamat Datang, ${fullName ?? "Pengguna"}!",
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.white.withOpacity(0.8),
@@ -204,107 +208,39 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ),
         ],
       ),
-      child: childName == null
-          ? Column(
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 40,
+            backgroundColor: AppColors.primary,
+            child: Icon(Icons.person_rounded, size: 45, color: AppColors.card),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.child_care_rounded,
-                  size: 60,
-                  color: AppColors.textGrey,
+                Text(
+                  fullName ?? "Pengguna",
+                  style: const TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Belum ada data anak.\nSilakan isi dulu 👶",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
+                const SizedBox(height: 6),
+                Text(
+                  userEmail ?? "-",
+                  style: const TextStyle(
                     color: AppColors.textGrey,
                     fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ChildFormScreen(),
-                      ),
-                    );
-                    if (result != null && result == true) {
-                      setState(() {
-                        childName = "Dina";
-                        childAge = 5;
-                        lastScreening = "Normal";
-                      });
-                    }
-                  },
-                  icon: const Icon(Icons.add_rounded, color: Colors.white),
-                  label: const Text(
-                    "Tambah Anak",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryLight,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: AppColors.primary,
-                  child: Icon(
-                    Icons.child_care_rounded,
-                    size: 45,
-                    color: AppColors.card,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        childName!,
-                        style: const TextStyle(
-                          color: AppColors.textDark,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Usia: $childAge tahun",
-                        style: const TextStyle(
-                          color: AppColors.textGrey,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Hasil terakhir: ${lastScreening ?? "-"}",
-                        style: const TextStyle(
-                          color: AppColors.textGrey,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 
