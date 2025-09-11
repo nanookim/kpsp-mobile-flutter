@@ -92,7 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         passwordController.text,
       );
 
-      if (result.containsKey('data')) {
+      if (result['success'] == true) {
         _showSuccessDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

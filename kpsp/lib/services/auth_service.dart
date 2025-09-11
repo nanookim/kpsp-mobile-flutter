@@ -7,7 +7,7 @@ import '../api_config.dart';
 class AuthService {
   /// 🔹 Register user baru
   Future<Map<String, dynamic>> register({
-    required String username,
+    required String name,
     required String email,
     required String password,
   }) async {
@@ -17,11 +17,7 @@ class AuthService {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: jsonEncode({
-        "username": username,
-        "email": email,
-        "password": password,
-      }),
+      body: jsonEncode({"name": name, "email": email, "password": password}),
     );
 
     return jsonDecode(response.body);
