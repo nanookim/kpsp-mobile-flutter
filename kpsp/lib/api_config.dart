@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = "http://kpsp.himogi.my.id/api";
+  static const String baseUrl = "https://kpsp.himogi.my.id/api";
 }
 
 // class ApiConfig {
