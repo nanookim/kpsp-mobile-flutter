@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:another_flushbar/flushbar.dart';
+import 'package:kpsp/screens/GambarScreen.dart';
 import 'package:kpsp/screens/GrafikScreen.dart';
 import 'package:kpsp/screens/PilihAnakScreen.dart';
 import 'package:kpsp/screens/SkriningRiwayatScreen.dart';
@@ -117,9 +118,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 builder: (_) => ProfileScreen(
                   fullName: fullName, // ✅ pakai fullname user
                   userEmail: userEmail,
-                  childName: childName,
-                  childAge: childAge,
-                  lastScreening: lastScreening,
                 ),
               ),
             );
@@ -172,9 +170,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ),
             const SizedBox(height: 20),
             const Text(
-              "KPSP",
+              "Deteksi Dini Tumbuh Kembang Anak",
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 30,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -267,21 +265,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             }
           },
         ),
-        _MenuItem(
-          icon: Icons.assignment_rounded,
-          label: "Skrining",
-          color: const Color(0xFFFFA07A),
-          onTap: () {
-            if (childName == null) {
-              _showFillChildDataDialog(context);
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => SkriningRiwayatScreen()),
-              );
-            }
-          },
-        ),
 
         _MenuItem(
           icon: Icons.note_alt_rounded,
@@ -294,6 +277,21 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const PilihAnakScreen()),
+              );
+            }
+          },
+        ),
+        _MenuItem(
+          icon: Icons.assignment_rounded,
+          label: "Skrining",
+          color: const Color(0xFFFFA07A),
+          onTap: () {
+            if (childName == null) {
+              _showFillChildDataDialog(context);
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => SkriningRiwayatScreen()),
               );
             }
           },

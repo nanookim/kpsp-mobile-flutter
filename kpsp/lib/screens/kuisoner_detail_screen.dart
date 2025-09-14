@@ -33,12 +33,6 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
     _loadSetDetail();
   }
 
-  /// Convert path backend menjadi full URL
-  String? getFullImageUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
-    return 'http://kpsp.himogi.my.id/storage/ilustrasi/$path'; // <-- ganti domain backend
-  }
-
   Future<void> _loadSetDetail() async {
     try {
       final data = await _service.getSetWithQuestions(widget.setId);
@@ -60,6 +54,29 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
   }
 
   Future<void> _submitJawaban() async {
+    // 💡 PENAMBAHAN: Validasi sebelum submit
+    final totalQuestions = setDetail?['pertanyaan']?.length ?? 0;
+    if (_jawabanUser.length < totalQuestions) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Harap jawab semua pertanyaan sebelum menyimpan.',
+                  style: GoogleFonts.poppins(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return; // Menghentikan proses jika belum semua pertanyaan dijawab
+    }
+
     try {
       final formattedJawaban = _jawabanUser.map(
         (key, value) => MapEntry(key.toString(), value),
@@ -102,8 +119,6 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -183,22 +198,29 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final pertanyaan = setDetail!['pertanyaan'][index];
                   final pertanyaanId = pertanyaan['id'] as int;
-                  final urlIlustrasi = getFullImageUrl(
-                    pertanyaan['url_ilustrasi'],
-                  );
+
+                  /// 🔥 Ambil nama file dari API dan mapping ke asset
+                  final rawUrl = pertanyaan['url_ilustrasi'] as String?;
+                  String? assetPath;
+                  if (rawUrl != null && rawUrl.isNotEmpty) {
+                    final fileName = rawUrl.split('/').last;
+                    assetPath = 'assets/images/$fileName';
+                    debugPrint(
+                      "Pertanyaan $pertanyaanId, assetPath: $assetPath",
+                    );
+                  }
 
                   return _PertanyaanCard(
                     nomor: pertanyaan['nomor_urut'] ?? index + 1,
                     teks: pertanyaan['teks_pertanyaan'] ?? "-",
-                    urlIlustrasi: urlIlustrasi,
                     pertanyaanId: pertanyaanId,
-                    selected: _jawabanUser[pertanyaanId],
                     onJawab: (id, jawaban) {
                       setState(() {
                         _jawabanUser[id] = jawaban;
                       });
-                      debugPrint("Jawaban sementara: $_jawabanUser");
                     },
+                    selected: _jawabanUser[pertanyaanId],
+                    assetIlustrasi: assetPath,
                   );
                 }, childCount: setDetail!['pertanyaan'].length),
               ),
@@ -206,32 +228,36 @@ class _KuisonerDetailScreenState extends State<KuisonerDetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed:
-            _jawabanUser.length == (setDetail?['pertanyaan']?.length ?? 0)
-            ? _submitJawaban
-            : null,
-        label: const Text("Simpan Jawaban"),
+        onPressed: _submitJawaban,
+        label: Text(
+          "Simpan Jawaban",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
         icon: const Icon(Icons.save),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
 
+/// ------------------------- PERTANYAAN CARD -------------------------
 class _PertanyaanCard extends StatelessWidget {
   final int nomor;
   final String teks;
+  final String? assetIlustrasi;
   final int pertanyaanId;
   final String? selected; // "ya" / "tidak"
-  final String? urlIlustrasi;
   final Function(int, String) onJawab;
 
   const _PertanyaanCard({
     required this.nomor,
+    this.assetIlustrasi,
     required this.teks,
     required this.pertanyaanId,
     required this.onJawab,
     this.selected,
-    this.urlIlustrasi,
   });
 
   @override
@@ -266,7 +292,7 @@ class _PertanyaanCard extends StatelessWidget {
                   backgroundColor: const Color(0xFF6A11CB),
                   child: Text(
                     "$nomor",
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -286,19 +312,17 @@ class _PertanyaanCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            /// ILUSTRASI (hanya tampil kalau ada)
-            /// ILUSTRASI (hanya tampil kalau ada)
-            if (urlIlustrasi?.isNotEmpty ?? false)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    urlIlustrasi!, // aman karena sudah dicek isNotEmpty
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            if (assetIlustrasi != null)
+              Center(
+                child: Image.asset(
+                  assetIlustrasi!,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: 300,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image,
+                    size: 50,
+                    color: Colors.grey,
                   ),
                 ),
               ),
@@ -310,7 +334,10 @@ class _PertanyaanCard extends StatelessWidget {
               spacing: 12,
               children: [
                 ChoiceChip(
-                  label: const Text("Ya"),
+                  label: Text(
+                    "Ya",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                  ),
                   selected: selected == "ya",
                   selectedColor: Colors.green,
                   onSelected: (_) => onJawab(pertanyaanId, "ya"),
@@ -319,7 +346,10 @@ class _PertanyaanCard extends StatelessWidget {
                   ),
                 ),
                 ChoiceChip(
-                  label: const Text("Tidak"),
+                  label: Text(
+                    "Tidak",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                  ),
                   selected: selected == "tidak",
                   selectedColor: Colors.red,
                   onSelected: (_) => onJawab(pertanyaanId, "tidak"),

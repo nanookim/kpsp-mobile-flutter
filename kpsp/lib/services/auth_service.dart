@@ -37,19 +37,35 @@ class AuthService {
       body: jsonEncode({"email": email, "password": password}),
     );
 
-    final data = jsonDecode(response.body);
+    // ❗ Cek status code dulu
+    if (response.statusCode == 200) {
+      try {
+        final data = jsonDecode(response.body);
 
-    if (response.statusCode == 200 && data['success'] == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', data['token']);
-      await prefs.setString(
-        'userName',
-        data['user']['username'] ?? data['user']['name'] ?? 'Pengguna',
-      );
-      await prefs.setString('userEmail', data['user']['email'] ?? '-');
+        if (data['success'] == true) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', data['token']);
+          await prefs.setString(
+            'userName',
+            data['user']['username'] ?? data['user']['name'] ?? 'Pengguna',
+          );
+          await prefs.setString('userEmail', data['user']['email'] ?? '-');
+        }
+
+        return data;
+      } catch (e) {
+        // ❗ Jika bukan JSON (misal HTML)
+        return {
+          'success': false,
+          'message': 'Server tidak merespons dengan JSON:\n${response.body}',
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan server (${response.statusCode})',
+      };
     }
-
-    return data;
   }
 
   /// 🔹 Logout user dan hapus token

@@ -101,14 +101,7 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
                       bottom: -40,
                       left: 0,
                       right: 0,
-                      child: Opacity(
-                        opacity: 0.2,
-                        child: Image.asset(
-                          "assets/wave.png",
-                          fit: BoxFit.cover,
-                          height: 120,
-                        ),
-                      ),
+                      child: Opacity(opacity: 0.2),
                     ),
                     SafeArea(
                       child: Padding(

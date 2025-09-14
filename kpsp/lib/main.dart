@@ -1,13 +1,25 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kpsp/screens/welcome_screen.dart';
 import 'package:kpsp/screens/main_menu_screen.dart';
 import 'package:kpsp/theme/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Import ini perlu ditambahkan
+import 'package:intl/date_symbol_data_local.dart';
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    client.badCertificateCallback = (cert, host, port) => true; // bypass SSL
+    return client;
+  }
+}
 
 void main() async {
+  HttpOverrides.global = MyHttpOverrides(); // <<<<<< harus di sini
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('id_ID', null); // Panggil di sini
+  await initializeDateFormatting('id_ID', null);
+
   runApp(const MyApp());
 }
 

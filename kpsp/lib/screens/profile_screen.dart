@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kpsp/screens/signin_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kpsp/theme/theme.dart';
 
 // ================= PROFILE SCREEN =================
 class ProfileScreen extends StatefulWidget {
@@ -24,16 +26,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late String? _childName;
-  late int? _childAge;
-  late String? _lastScreening;
-
   @override
   void initState() {
     super.initState();
-    _childName = widget.childName;
-    _childAge = widget.childAge;
-    _lastScreening = widget.lastScreening;
   }
 
   // ==== LOGOUT ====
@@ -41,13 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 🔹 Hapus data login tersimpan (kalau ada)
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-
-    // 🔹 Kosongkan state anak
-    setState(() {
-      _childName = null;
-      _childAge = null;
-      _lastScreening = null;
-    });
 
     // 🔹 Arahkan ke SignInScreen & hapus semua route sebelumnya
     if (mounted) {
@@ -59,149 +47,170 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ==== EDIT PROFIL ====
-  void _editProfile(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            EditProfileScreen(currentName: _childName, currentAge: _childAge),
-      ),
-    );
-
-    // Jika ada data baru dari form, update state
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        _childName = result['name'];
-        _childAge = result['age'];
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Profil"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // 🔹 Avatar user
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.blue.shade100,
-              child: const Icon(Icons.person, size: 50, color: Colors.blue),
-            ),
-            const SizedBox(height: 15),
-
-            // 🔹 Nama lengkap dari akun
-            Text(
-              widget.fullName ?? "Pengguna",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-
-            // 🔹 Email user
-            Text(
-              widget.userEmail ?? "-",
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const Divider(height: 40),
-
-            const SizedBox(height: 30),
-
-            // 🔹 Tombol Edit dan Logout
-            // ListTile(
-            //   leading: const Icon(Icons.edit),
-            //   title: const Text("Edit Profil Anak"),
-            //   onTap: () => _editProfile(context),
-            // ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
-              onTap: () => _logout(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ================= EDIT PROFILE SCREEN =================
-class EditProfileScreen extends StatefulWidget {
-  final String? currentName;
-  final int? currentAge;
-
-  const EditProfileScreen({super.key, this.currentName, this.currentAge});
-
-  @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
-}
-
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _ageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.currentName ?? "");
-    _ageController = TextEditingController(
-      text: widget.currentAge?.toString() ?? "",
-    );
-  }
-
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.pop(context, {
-        'name': _nameController.text,
-        'age': int.tryParse(_ageController.text),
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Edit Profil Anak")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Nama Anak"),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Nama wajib diisi" : null,
+      body: Stack(
+        children: [
+          // BACKGROUND GRADIENT
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF673AB7), Color(0xFF9C27B0)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              const SizedBox(height: 15),
-              TextFormField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Usia Anak"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return "Usia wajib diisi";
-                  if (int.tryParse(value) == null) return "Usia harus angka";
-                  return null;
-                },
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _saveProfile,
-                child: const Text("Simpan"),
-              ),
-            ],
+            ),
           ),
+
+          // KONTEN UTAMA
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 20.0,
+              ),
+              child: Column(
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 50),
+
+                  // Profile Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(25.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Avatar user
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Color(0xFF9C27B0).withOpacity(0.2),
+                          child: Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Color(0xFF9C27B0),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        // Nama lengkap dari akun
+                        Text(
+                          widget.fullName ?? "Pengguna",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        // Email user
+                        Text(
+                          widget.userEmail ?? "-",
+                          style: GoogleFonts.montserrat(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Tombol Edit dan Logout
+                        const SizedBox(height: 10),
+                        _buildProfileButton(
+                          icon: Icons.logout,
+                          title: "Logout",
+                          onTap: () => _logout(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget pembantu untuk menampilkan informasi
+  Widget _buildProfileInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "$label:",
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
+          Text(value, style: GoogleFonts.montserrat(color: Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  // Widget pembantu untuk tombol
+  Widget _buildProfileButton({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: lightColorScheme.primary,
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(color: lightColorScheme.primary, width: 1.0),
         ),
+        padding: const EdgeInsets.symmetric(vertical: 18),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: GoogleFonts.montserrat(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
