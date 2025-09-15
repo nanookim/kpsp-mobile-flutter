@@ -4,14 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../services/set_pertanyaan_service.dart';
 import 'kuisoner_detail_screen.dart'; // import detail screen
+import 'package:intl/intl.dart';
 
 class KuisonerScreen extends StatefulWidget {
   final int childId; // ⬅️ tambah
   final String childName; // ⬅️ tambah
+  final String childDob; // ⬅️ tambahin
   const KuisonerScreen({
     super.key,
     required this.childId,
     required this.childName,
+    required this.childDob, // ⬅️ tambahin
   });
 
   @override
@@ -20,9 +23,9 @@ class KuisonerScreen extends StatefulWidget {
 
 class _KuisonerScreenState extends State<KuisonerScreen> {
   final _service = SetPertanyaanService();
+  String? nextAvailableMessage;
   List<Map<String, dynamic>> sets = [];
   bool isLoading = true;
-
   final List<IconData> icons = [
     Icons.cake_rounded,
     Icons.child_friendly_rounded,
@@ -38,14 +41,97 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
     _loadData();
   }
 
+  String _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return '-';
+    }
+    try {
+      final dateTime = DateTime.parse(dateString);
+      return DateFormat('dd MMMM yyyy', 'id_ID').format(dateTime);
+    } catch (e) {
+      debugPrint("Error parsing date: $e");
+      return dateString;
+    }
+  }
+
+  int _hitungUmurBulan(String dob) {
+    try {
+      final lahir = DateTime.parse(dob);
+      final now = DateTime.now();
+
+      int tahun = now.year - lahir.year;
+      int bulan = now.month - lahir.month;
+      int hari = now.day - lahir.day;
+
+      if (bulan < 0 || (bulan == 0 && hari < 0)) {
+        tahun--;
+        bulan += 12;
+      }
+
+      return tahun * 12 + bulan;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  int _hitungHariMenuju(String dob, int targetBulan) {
+    final lahir = DateTime.parse(dob);
+    final targetDate = DateTime(
+      lahir.year,
+      lahir.month + targetBulan,
+      lahir.day,
+    );
+    final now = DateTime.now();
+
+    return targetDate.difference(now).inDays;
+  }
+
   Future<void> _loadData() async {
     setState(() => isLoading = true);
     try {
       final data = await _service.fetchSets(widget.childId);
+      final umurBulan = _hitungUmurBulan(widget.childDob);
 
-      final availableSets = data
-          .where((set) => set['skrining_terakhir'] == null)
-          .toList();
+      // debug
+      debugPrint('Umur anak (bulan): $umurBulan');
+      debugPrint('Data: $data');
+
+      // Helper cek skrining sudah diisi atau belum
+      bool _isNotFilled(dynamic skr) {
+        if (skr == null) return true;
+        final s = skr.toString().trim().toLowerCase();
+        return s.isEmpty || s == 'null';
+      }
+
+      // Ambil semua set yg umurnya sudah terlewati & belum diisi
+      List<Map<String, dynamic>> availableSets = data.where((set) {
+        final usia = (set['usia_dalam_bulan'] as num).toInt();
+        return usia <= umurBulan && _isNotFilled(set['skrining_terakhir']);
+      }).toList();
+
+      // Urutkan biar rapi
+      availableSets.sort(
+        (a, b) => (a['usia_dalam_bulan'] as int).compareTo(
+          b['usia_dalam_bulan'] as int,
+        ),
+      );
+
+      // Cari target usia berikutnya (> umur anak)
+      final usiaList =
+          data.map<int>((s) => (s['usia_dalam_bulan'] as num).toInt()).toList()
+            ..sort();
+      final nextUsia = usiaList.firstWhere(
+        (u) => u > umurBulan,
+        orElse: () => -1,
+      );
+
+      if (nextUsia != -1) {
+        final sisaHari = _hitungHariMenuju(widget.childDob, nextUsia);
+        nextAvailableMessage =
+            "Kuesioner usia $nextUsia bulan bisa diisi dalam ${sisaHari > 0 ? sisaHari : 0} hari lagi";
+      } else {
+        nextAvailableMessage = null;
+      }
 
       if (mounted) {
         setState(() {
@@ -53,7 +139,8 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
           isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint("Error loadData: $e\n$st");
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(
@@ -125,13 +212,22 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Kuisoner Pro",
+                                    "Kuisoner",
                                     style: GoogleFonts.poppins(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 26,
                                       color: Colors.white,
                                     ),
                                   ),
+                                  Text(
+                                    widget.childName, // tampilkan nama anak
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 22,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+
                                   Text(
                                     "${sets.length} Set tersedia",
                                     style: GoogleFonts.poppins(
@@ -169,28 +265,32 @@ class _KuisonerScreenState extends State<KuisonerScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      "Belum ada data set pertanyaan",
+                      nextAvailableMessage ?? "Belum ada data set pertanyaan",
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         color: Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6A11CB),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                    if (nextAvailableMessage == null) ...[
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6A11CB),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text("Muat Ulang"),
+                        onPressed: _loadData,
                       ),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text("Muat Ulang"),
-                      onPressed: _loadData,
-                    ),
+                    ],
                   ],
                 ),
               ),

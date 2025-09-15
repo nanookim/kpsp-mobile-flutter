@@ -181,6 +181,7 @@ class _PilihAnakScreenState extends State<PilihAnakScreen> {
                             builder: (_) => KuisonerScreen(
                               childId: anak['id'], // ⬅️ tambah
                               childName: name, // ⬅️ tambah
+                              childDob: dobRaw, // ⬅️ kirim data asli
                             ),
                           ),
                         );
