@@ -19,9 +19,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final passwordController = TextEditingController();
 
   bool agreePersonalData = true;
-  // Password
-  bool _obscurePassword = true; // 👁 state untuk show/hide password
-  String _passwordStrength = ""; // 🔥 indikator strength password
+  bool _obscurePassword = true;
+  String _passwordStrength = "";
   Color _strengthColor = Colors.red;
 
   @override
@@ -32,7 +31,52 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  /// 🔹 Fungsi untuk menampilkan dialog sukses dengan animasi
+  /// 🔹 Fungsi untuk menampilkan dialog error di tengah layar
+  void _showErrorDialog(String message) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Error",
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, _, __) {
+        return Center(
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.error_outline, color: Colors.red, size: 30),
+                SizedBox(width: 10),
+                Text("Gagal!"),
+              ],
+            ),
+            content: Text(message, style: const TextStyle(fontSize: 16)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "OK",
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+          child: child,
+        );
+      },
+    );
+  }
+
+  /// 🔹 Fungsi untuk menampilkan dialog sukses
   void _showSuccessDialog() {
     showGeneralDialog(
       context: context,
@@ -58,7 +102,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // tutup dialog
+                Navigator.pop(context);
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (e) => const SignInScreen()),
@@ -84,7 +128,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  /// 🔹 Fungsi untuk handle register
+  /// 🔹 Handle Register
   Future<void> _handleRegister() async {
     if (_formSignupKey.currentState!.validate() && agreePersonalData) {
       final api = ApiService();
@@ -97,15 +141,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (result['success'] == true) {
         _showSuccessDialog();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? "Registrasi gagal")),
-        );
+        final msg = result['message'] ?? "Registrasi gagal";
+
+        if (result['errors'] != null) {
+          final errors = result['errors'] as Map<String, dynamic>;
+          var firstError = errors.values.first[0];
+
+          // 🔹 Mapping manual pesan error
+          if (firstError.contains("has already been taken")) {
+            firstError = "Email sudah digunakan.";
+          } else if (firstError.contains("must be at least")) {
+            firstError = "Kata sandi terlalu pendek (minimal 8 karakter).";
+          } else if (firstError.contains("format is invalid")) {
+            firstError = "Format kata sandi tidak valid.";
+          }
+
+          _showErrorDialog(firstError);
+        } else {
+          _showErrorDialog(msg);
+        }
       }
     } else if (!agreePersonalData) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the processing of personal data'),
-        ),
+      _showErrorDialog(
+        "Harap setujui pemrosesan data pribadi terlebih dahulu.",
       );
     }
   }
@@ -137,27 +195,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  /// TOMBOL KEMBALI
-                  // Align(
-                  //   alignment: Alignment.topLeft,
-                  //   child: GestureDetector(
-                  //     onTap: () => Navigator.of(context).pop(),
-                  //     child: Container(
-                  //       padding: const EdgeInsets.all(10),
-                  //       decoration: BoxDecoration(
-                  //         color: Colors.white.withOpacity(0.2),
-                  //         borderRadius: BorderRadius.circular(10),
-                  //       ),
-                  //       child: const Icon(
-                  //         Icons.arrow_back_ios,
-                  //         color: Colors.white,
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
                   const SizedBox(height: 50),
 
-                  /// JUDUL DAN DESKRIPSI
+                  /// JUDUL
                   Center(
                     child: Column(
                       children: [
@@ -205,9 +245,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Form(
                         key: _formSignupKey,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            /// Nama Lengkap Field
+                            /// Nama
                             TextFormField(
                               controller: nameController,
                               validator: (value) =>
@@ -217,28 +256,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Nama Lengkap',
                                 prefixIcon: const Icon(Icons.person_outline),
-                                hintText: 'Masukkan nama lengkap',
-                                hintStyle: const TextStyle(
-                                  color: Colors.black26,
-                                ),
                                 filled: true,
                                 fillColor: Colors.grey[100],
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
                                   borderSide: BorderSide.none,
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    color: lightColorScheme.primary,
-                                    width: 2.0,
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(height: 25.0),
 
-                            /// Email Field
+                            /// Email
                             TextFormField(
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -257,28 +285,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Email',
                                 prefixIcon: const Icon(Icons.email_outlined),
-                                hintText: 'email@example.com',
-                                hintStyle: const TextStyle(
-                                  color: Colors.black26,
-                                ),
                                 filled: true,
                                 fillColor: Colors.grey[100],
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
                                   borderSide: BorderSide.none,
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    color: lightColorScheme.primary,
-                                    width: 2.0,
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(height: 25.0),
 
-                            /// Password Field
+                            /// Password
                             TextFormField(
                               controller: passwordController,
                               obscureText: _obscurePassword,
@@ -326,23 +343,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               decoration: InputDecoration(
                                 labelText: 'Kata Sandi',
                                 prefixIcon: const Icon(Icons.lock_outline),
-                                hintText: '********',
-                                hintStyle: const TextStyle(
-                                  color: Colors.black26,
-                                ),
-                                filled: true,
-                                fillColor: Colors.grey[100],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                    color: lightColorScheme.primary,
-                                    width: 2.0,
-                                  ),
-                                ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -355,11 +355,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     });
                                   },
                                 ),
+                                filled: true,
+                                fillColor: Colors.grey[100],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide.none,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 5),
-
-                            /// Indikator Kekuatan Kata Sandi
                             if (_passwordStrength.isNotEmpty)
                               Align(
                                 alignment: Alignment.centerLeft,
@@ -389,7 +392,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   child: Text(
                                     'Saya menyetujui pemrosesan data pribadi',
                                     style: TextStyle(color: Colors.black54),
-                                    softWrap: true,
                                   ),
                                 ),
                               ],
@@ -410,7 +412,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                   backgroundColor: lightColorScheme.primary,
                                   foregroundColor: Colors.white,
-                                  elevation: 5,
                                 ),
                                 child: Text(
                                   'Daftar',
@@ -423,74 +424,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             const SizedBox(height: 30.0),
 
-                            /// Divider
-                            // Row(
-                            //   children: [
-                            //     Expanded(
-                            //       child: Divider(
-                            //         thickness: 0.7,
-                            //         color: Colors.grey.withOpacity(0.5),
-                            //       ),
-                            //     ),
-                            //     const Padding(
-                            //       padding: EdgeInsets.symmetric(horizontal: 10),
-                            //       child: Text(
-                            //         'atau',
-                            //         style: TextStyle(color: Colors.black45),
-                            //       ),
-                            //     ),
-                            //     Expanded(
-                            //       child: Divider(
-                            //         thickness: 0.7,
-                            //         color: Colors.grey.withOpacity(0.5),
-                            //       ),
-                            //     ),
-                            //   ],
-                            // ),
-                            // const SizedBox(height: 30.0),
-
-                            // /// Tombol Masuk Sosial
-                            // Row(
-                            //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            //   children: [
-                            //     _SocialButton(
-                            //       icon: Brand(Brands.google),
-                            //       onTap: () => ScaffoldMessenger.of(context)
-                            //           .showSnackBar(
-                            //             const SnackBar(
-                            //               content: Text(
-                            //                 "Google login belum tersedia",
-                            //               ),
-                            //             ),
-                            //           ),
-                            //     ),
-                            //     _SocialButton(
-                            //       icon: Brand(Brands.apple_logo),
-                            //       onTap: () => ScaffoldMessenger.of(context)
-                            //           .showSnackBar(
-                            //             const SnackBar(
-                            //               content: Text(
-                            //                 "Apple login belum tersedia",
-                            //               ),
-                            //             ),
-                            //           ),
-                            //     ),
-                            //     _SocialButton(
-                            //       icon: Brand(Brands.facebook),
-                            //       onTap: () => ScaffoldMessenger.of(context)
-                            //           .showSnackBar(
-                            //             const SnackBar(
-                            //               content: Text(
-                            //                 "Facebook login belum tersedia",
-                            //               ),
-                            //             ),
-                            //           ),
-                            //     ),
-                            //   ],
-                            // ),
-                            const SizedBox(height: 25.0),
-
-                            /// Sudah punya akun
+                            /// Sudah punya akun?
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

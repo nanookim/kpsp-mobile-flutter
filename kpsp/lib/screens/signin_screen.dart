@@ -79,11 +79,14 @@ class _SignInScreenState extends State<SignInScreen> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? "Login gagal, coba lagi."),
-          ),
-        );
+        var msg = result['message'] ?? "Login gagal, coba lagi.";
+
+        // Mapping manual biar lebih ramah
+        if (msg.contains("These credentials do not match our records")) {
+          msg = "Email atau kata sandi salah.";
+        }
+
+        _showErrorDialog(msg);
       }
     } catch (e) {
       setState(() => _loading = false);
@@ -98,6 +101,51 @@ class _SignInScreenState extends State<SignInScreen> {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  /// 🔹 Fungsi untuk menampilkan dialog error di tengah
+  void _showErrorDialog(String message) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Error",
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, _, __) {
+        return Center(
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: const [
+                Icon(Icons.error_outline, color: Colors.red, size: 30),
+                SizedBox(width: 10),
+                Text("Gagal!"),
+              ],
+            ),
+            content: Text(message, style: const TextStyle(fontSize: 16)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "OK",
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+          child: child,
+        );
+      },
+    );
   }
 
   @override

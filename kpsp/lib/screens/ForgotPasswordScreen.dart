@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kpsp/services/auth_service.dart';
 import 'package:kpsp/theme/theme.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -19,16 +20,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _loading = true);
 
-    await Future.delayed(const Duration(seconds: 2)); // simulasi API
+    final authService = AuthService();
+    final result = await authService.forgotPassword(
+      email: emailController.text,
+    );
 
     if (mounted) {
       setState(() => _loading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Link reset password telah dikirim ke email Anda"),
-        ),
+        SnackBar(content: Text(result['message'] ?? 'Terjadi kesalahan')),
       );
-      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        Navigator.pop(context); // kembali ke halaman login
+      }
     }
   }
 

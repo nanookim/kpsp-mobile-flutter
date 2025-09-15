@@ -6,21 +6,47 @@ import '../api_config.dart';
 
 class AuthService {
   /// 🔹 Register user baru
-  Future<Map<String, dynamic>> register({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
+  Future<Map<String, dynamic>> register(
+    String username,
+    String email,
+    String password,
+  ) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/register'),
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        "Accept": "application/json", // penting biar Laravel selalu JSON
       },
-      body: jsonEncode({"name": name, "email": email, "password": password}),
+      body: jsonEncode({
+        "username": username,
+        "email": email,
+        "password": password,
+      }),
     );
 
-    return jsonDecode(response.body);
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 201) {
+      // ✅ sukses register
+      return {
+        "success": true,
+        "message": data["message"],
+        "user": data["user"],
+      };
+    } else if (response.statusCode == 422) {
+      // ❌ validasi gagal
+      return {
+        "success": false,
+        "message": data["message"],
+        "errors": data["errors"], // bisa dipakai untuk detail error field
+      };
+    } else {
+      // ❌ error lain
+      return {
+        "success": false,
+        "message": "Terjadi kesalahan server (${response.statusCode})",
+      };
+    }
   }
 
   /// 🔹 Login user dan simpan token
@@ -37,11 +63,11 @@ class AuthService {
       body: jsonEncode({"email": email, "password": password}),
     );
 
-    // ❗ Cek status code dulu
-    if (response.statusCode == 200) {
-      try {
-        final data = jsonDecode(response.body);
+    try {
+      final data = jsonDecode(response.body);
 
+      if (response.statusCode == 200) {
+        // ✅ Login sukses
         if (data['success'] == true) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', data['token']);
@@ -51,19 +77,29 @@ class AuthService {
           );
           await prefs.setString('userEmail', data['user']['email'] ?? '-');
         }
-
         return data;
-      } catch (e) {
-        // ❗ Jika bukan JSON (misal HTML)
+      } else if (response.statusCode == 422) {
+        // ✅ Error validasi dari Laravel (misal: email/password salah)
         return {
           'success': false,
-          'message': 'Server tidak merespons dengan JSON:\n${response.body}',
+          'message':
+              data['errors']?['email']?.first ??
+              data['message'] ??
+              'Email atau password salah.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              data['message'] ??
+              'Terjadi kesalahan server (${response.statusCode})',
         };
       }
-    } else {
+    } catch (e) {
+      // ❗ Jika respons bukan JSON (HTML error dsb.)
       return {
         'success': false,
-        'message': 'Terjadi kesalahan server (${response.statusCode})',
+        'message': 'Server tidak merespons dengan JSON:\n${response.body}',
       };
     }
   }
@@ -86,5 +122,26 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// 🔹 Kirim link reset password
+  Future<Map<String, dynamic>> forgotPassword({required String email}) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/forgot-password'),
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: jsonEncode({"email": email}),
+    );
+
+    try {
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Server tidak merespons dengan JSON:\n${response.body}',
+      };
+    }
   }
 }
