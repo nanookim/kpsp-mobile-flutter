@@ -6,6 +6,7 @@ import 'package:kpsp/screens/signup_screen.dart';
 import 'package:kpsp/theme/theme.dart';
 import 'package:kpsp/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ForgotPasswordScreen.dart';
 
 class SignInScreen extends StatefulWidget {
   final bool hideBackButton;
@@ -306,9 +307,11 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Fitur belum tersedia"),
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ForgotPasswordScreen(),
                                       ),
                                     );
                                   },
