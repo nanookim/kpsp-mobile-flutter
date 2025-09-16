@@ -22,6 +22,41 @@ class _MainChildScreenState extends State<MainChildScreen> {
     _fetchChildren();
   }
 
+  // Tambahkan fungsi ini di dalam class _MainChildScreenState
+  String calculateAge(String? birthDateString) {
+    if (birthDateString == null || birthDateString.isEmpty) return "-";
+
+    try {
+      final birthDate = DateTime.parse(birthDateString);
+      final today = DateTime.now();
+
+      int years = today.year - birthDate.year;
+      int months = today.month - birthDate.month;
+      int days = today.day - birthDate.day;
+
+      if (days < 0) {
+        final prevMonth = DateTime(today.year, today.month, 0);
+        days += prevMonth.day;
+        months -= 1;
+      }
+
+      if (months < 0) {
+        months += 12;
+        years -= 1;
+      }
+
+      String result = "";
+      if (years > 0) result += "$years tahun ";
+      if (months > 0) result += "$months bulan ";
+      if (days > 0) result += "$days hari";
+
+      return result.trim();
+    } catch (e) {
+      debugPrint("Error calculate age: $e");
+      return "-";
+    }
+  }
+
   String _formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) {
       return '-';
@@ -305,6 +340,14 @@ class _MainChildScreenState extends State<MainChildScreen> {
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          "Usia: ${calculateAge(child['date_of_birth'])}",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
