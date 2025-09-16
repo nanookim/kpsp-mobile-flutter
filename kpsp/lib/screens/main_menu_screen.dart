@@ -12,9 +12,8 @@ import 'package:kpsp/services/child_service.dart';
 import 'package:kpsp/services/set_pertanyaan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Palet warna yang lebih berani dan eksklusif
 class AppColors {
-  static const Color primary = Color(0xFF4B0082); // Ungu gelap solid
+  static const Color primary = Color(0xFF4B0082);
   static const Color primaryLight = Color(0xFF6F51E9);
   static const Color background = Color(0xFFF7F9FC);
   static const Color card = Color(0xFFFFFFFF);
@@ -36,8 +35,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   String? childName = "Dina";
   int? childAge = 5;
   String? lastScreening = "Normal";
-  // ⬅️ Tambahkan ini
   List<Map<String, dynamic>>? screenings;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +70,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -94,7 +95,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildMenuGrid(),
+                  // Wrap GridView with SizedBox to avoid overflow
+                  SizedBox(
+                    height: screenHeight * 0.4, // adjust height as needed
+                    child: _buildMenuGrid(),
+                  ),
                   const SizedBox(height: 80),
                 ],
               ),
@@ -102,7 +107,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.card,
         selectedItemColor: AppColors.primary,
@@ -115,10 +119,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ProfileScreen(
-                  fullName: fullName, // ✅ pakai fullname user
-                  userEmail: userEmail,
-                ),
+                builder: (_) =>
+                    ProfileScreen(fullName: fullName, userEmail: userEmail),
               ),
             );
           }
@@ -128,10 +130,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             icon: Icon(Icons.home_rounded),
             label: "Beranda",
           ),
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.bar_chart_rounded),
-          //   label: "Riwayat",
-          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_rounded),
             label: "Profil",
@@ -141,7 +139,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     );
   }
 
-  // Header yang sepenuhnya baru dan artistik
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -260,15 +257,12 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               context,
               MaterialPageRoute(builder: (_) => const MainChildScreen()),
             );
-            if (result != null && result == true) {
-              // TODO: update child data
-            }
+            if (result != null && result == true) {}
           },
         ),
-
         _MenuItem(
           icon: Icons.note_alt_rounded,
-          label: "Survey",
+          label: "Pemeriksaan",
           color: const Color(0xFF6495ED),
           onTap: () {
             if (childName == null) {
@@ -283,7 +277,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         _MenuItem(
           icon: Icons.assignment_rounded,
-          label: "Skrining",
+          label: "Hasil Pemeriksaan",
           color: const Color(0xFFFFA07A),
           onTap: () {
             if (childName == null) {
@@ -296,30 +290,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             }
           },
         ),
-        // _MenuItem(
-        //   icon: Icons.notifications_active_rounded,
-        //   label: "Reminder",
-        //   color: const Color(0xFFDA70D6),
-        //   onTap: () {
-        //     if (childName == null) {
-        //       _showFillChildDataDialog(context);
-        //     } else {
-        //       // TODO: Navigasi Reminder
-        //     }
-        //   },
-        // ),
-        // _MenuItem(
-        //   icon: Icons.book_rounded,
-        //   label: "Edukasi",
-        //   color: const Color(0xFF3CB371),
-        //   onTap: () {
-        //     if (childName == null) {
-        //       _showFillChildDataDialog(context);
-        //     } else {
-        //       // TODO: Navigasi Edukasi
-        //     }
-        //   },
-        // ),
       ],
     );
   }

@@ -126,21 +126,63 @@ class AuthService {
 
   /// 🔹 Kirim link reset password
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/forgot-password'),
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: jsonEncode({"email": email}),
-    );
-
     try {
-      return jsonDecode(response.body);
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/forgot-password'),
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+            },
+            body: jsonEncode({"email": email}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Request gagal [${response.statusCode}]: ${response.body}',
+        };
+      }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Server tidak merespons dengan JSON:\n${response.body}',
+        'message': 'Tidak bisa terhubung ke server: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/reset-password'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "token": token,
+          "email": email,
+          "password": password,
+          "password_confirmation": password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Request gagal [${response.statusCode}]: ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Tidak bisa terhubung ke server: $e',
       };
     }
   }

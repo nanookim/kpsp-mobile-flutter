@@ -1,49 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:kpsp/services/auth_service.dart';
-import 'package:kpsp/theme/theme.dart';
-import 'ResetPasswordScreen .dart';
+import '../services/auth_service.dart';
+import '../theme/theme.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  final String token;
+  final String email;
+
+  const ResetPasswordScreen({
+    required this.token,
+    required this.email,
+    super.key,
+  });
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
   bool _loading = false;
 
-  Future<void> _resetPassword() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
-
     final authService = AuthService();
-    final result = await authService.forgotPassword(
-      email: emailController.text,
+    final result = await authService.resetPassword(
+      token: widget.token,
+      email: widget.email,
+      password: passwordController.text,
+    );
+    setState(() => _loading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message'] ?? 'Terjadi kesalahan'),
+        duration: const Duration(seconds: 3),
+      ),
     );
 
-    if (mounted) {
-      setState(() => _loading = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Terjadi kesalahan')),
-      );
-
-      if (result['success'] == true) {
-        // Misal token sudah dikirim lewat API response (untuk demo)
-        final token = result['token'] ?? '';
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                ResetPasswordScreen(token: token, email: emailController.text),
-          ),
-        );
-      }
+    if (result['success'] == true) {
+      Navigator.popUntil(context, (route) => route.isFirst); // kembali ke login
     }
   }
 
@@ -52,7 +52,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          /// BACKGROUND GRADIENT
+          // Background gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -63,14 +63,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
 
-          /// KONTEN UTAMA
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  /// 🔹 TOMBOL KEMBALI
+                  // Back button
                   Align(
                     alignment: Alignment.topLeft,
                     child: GestureDetector(
@@ -90,39 +89,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 40),
 
-                  /// JUDUL
+                  // Title
                   Text(
-                    "Lupa Kata Sandi",
+                    'Reset Password',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.montserrat(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "Masukkan email akun Anda. Kami akan mengirimkan link untuk mereset kata sandi.",
+                    'Masukkan password baru untuk akun Anda.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.montserrat(
                       fontSize: 16,
                       color: Colors.white70,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 50),
 
-                  /// FORM CARD
+                  // Form Card
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(25, 40, 25, 30),
+                    padding: const EdgeInsets.all(25),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(30),
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
+                          blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
                       ],
@@ -131,64 +128,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          /// EMAIL FIELD
+                          // Password field
                           TextFormField(
-                            controller: emailController,
-                            keyboardType: TextInputType.emailAddress,
+                            controller: passwordController,
+                            obscureText: true,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Harap masukkan email';
+                                return 'Harap masukkan password';
                               }
-                              final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                              if (!emailRegex.hasMatch(value)) {
-                                return 'Harap masukkan email yang valid';
+                              if (value.length < 8) {
+                                return 'Password minimal 8 karakter';
                               }
                               return null;
                             },
                             decoration: InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              hintText: 'email@example.com',
-                              hintStyle: const TextStyle(color: Colors.black26),
-                              filled: true,
-                              fillColor: Colors.grey[100],
+                              labelText: 'Password Baru',
+                              prefixIcon: const Icon(Icons.lock_outline),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
-                                borderSide: BorderSide.none,
                               ),
-                              focusedBorder: OutlineInputBorder(
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Confirm password field
+                          TextFormField(
+                            controller: confirmController,
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Harap konfirmasi password';
+                              }
+                              if (value != passwordController.text) {
+                                return 'Password tidak cocok';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Konfirmasi Password',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(15),
-                                borderSide: BorderSide(
-                                  color: lightColorScheme.primary,
-                                  width: 2.0,
-                                ),
                               ),
+                              filled: true,
+                              fillColor: Colors.grey[100],
                             ),
                           ),
                           const SizedBox(height: 30),
 
-                          /// BUTTON KIRIM
+                          // Submit button
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _loading ? null : _resetPassword,
+                              onPressed: _loading ? null : _submit,
                               style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 18,
                                 ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
                                 backgroundColor: lightColorScheme.primary,
-                                foregroundColor: Colors.white,
-                                elevation: 5,
                               ),
                               child: _loading
                                   ? const CircularProgressIndicator(
                                       color: Colors.white,
                                     )
                                   : Text(
-                                      'Kirim',
+                                      'Reset Password',
                                       style: GoogleFonts.montserrat(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
