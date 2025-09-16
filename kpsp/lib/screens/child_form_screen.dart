@@ -1,3 +1,4 @@
+// screens/child_form_screen.dart
 import 'package:flutter/material.dart';
 import '../services/child_service.dart';
 import 'package:another_flushbar/flushbar.dart';
@@ -18,15 +19,21 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _dateController;
+  late TextEditingController _gestationalAgeController;
   String? _gender;
   bool _isSaving = false;
   List<String> _apiErrors = [];
+  String? _birthHistory; // normal atau premature
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.child?["name"] ?? "");
     _gender = widget.child?["gender"];
+    _birthHistory = widget.child?["birth_history"]?.toString().toLowerCase();
+    _gestationalAgeController = TextEditingController(
+      text: widget.child?["gestational_age"]?.toString() ?? "",
+    );
 
     if (widget.child != null && widget.child!["date_of_birth"] != null) {
       try {
@@ -48,9 +55,96 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
   void dispose() {
     _nameController.dispose();
     _dateController.dispose();
+    _gestationalAgeController.dispose();
     super.dispose();
   }
 
+  /// FIELD Usia Kehamilan
+  Widget _buildGestationalAgeField() => TextFormField(
+    controller: _gestationalAgeController,
+    keyboardType: TextInputType.number,
+    style: const TextStyle(fontWeight: FontWeight.w500),
+    decoration: InputDecoration(
+      labelText: "Usia Kehamilan",
+      labelStyle: const TextStyle(
+        color: Colors.grey,
+        fontWeight: FontWeight.normal,
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.never,
+      prefixIcon: const Icon(Icons.access_time, color: Color(0xFF6F51E9)),
+      suffixText: "minggu",
+      suffixStyle: const TextStyle(
+        color: Colors.grey,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: Colors.grey.shade100,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF6F51E9), width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+    ),
+    validator: (value) {
+      if (value == null || value.isEmpty) return "Usia kehamilan wajib diisi";
+      final n = int.tryParse(value);
+      if (n == null || n < 20 || n > 45) {
+        return "Masukkan angka antara 20-45 minggu";
+      }
+      return null;
+    },
+  );
+
+  /// Dropdown Riwayat Kelahiran
+  Widget _buildBirthHistoryDropdown() => DropdownButtonFormField<String>(
+    value: _birthHistory,
+    decoration: InputDecoration(
+      labelText: "Riwayat Kelahiran",
+      labelStyle: const TextStyle(
+        color: Colors.grey,
+        fontWeight: FontWeight.normal,
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.never,
+      prefixIcon: const Icon(Icons.history_edu, color: Color(0xFF6F51E9)),
+      filled: true,
+      fillColor: Colors.grey.shade100,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF6F51E9), width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
+    ),
+    items: const [
+      DropdownMenuItem(value: 'normal', child: Text('Normal')),
+      DropdownMenuItem(value: 'premature', child: Text('Premature')),
+    ],
+    onChanged: (value) => setState(() => _birthHistory = value),
+    validator: (value) => value == null ? "Pilih riwayat kelahiran" : null,
+  );
+
+  /// SIMPAN DATA ANAK
   Future<void> _saveChild() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -67,12 +161,22 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
             ).parse(_dateController.text).toIso8601String()
           : "";
 
+      int? gestationalAge;
+      if (_gestationalAgeController.text.isNotEmpty) {
+        gestationalAge = int.tryParse(_gestationalAgeController.text);
+        if (gestationalAge == null) {
+          throw Exception('Usia kehamilan harus berupa angka');
+        }
+      }
+
       Map<String, dynamic> response;
       if (widget.child == null) {
         response = await _childService.addChild(
           _nameController.text,
           _gender!,
           formattedDate,
+          _birthHistory!,
+          gestationalAge: gestationalAge,
         );
       } else {
         response = await _childService.updateChild(
@@ -80,6 +184,8 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
           _nameController.text,
           _gender!,
           formattedDate,
+          _birthHistory!,
+          gestationalAge: gestationalAge,
         );
       }
 
@@ -97,6 +203,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         ).show(context);
         Navigator.pop(context, true);
       } else {
+        // tampilkan pesan error dari API
         if (response["errors"] != null) {
           Map errorsMap = response["errors"];
           _apiErrors = errorsMap.values
@@ -115,29 +222,29 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     }
   }
 
+  /// Date Picker
   Future<void> _pickDate() async {
-    DateTime initialDate = DateTime.now().subtract(
-      const Duration(days: 365 * 5),
-    );
-    DateTime? initialDateForPicker;
+    DateTime now = DateTime.now();
+    DateTime initialDate;
+
     if (_dateController.text.isNotEmpty) {
       try {
-        initialDateForPicker = DateFormat(
+        initialDate = DateFormat(
           'dd MMMM yyyy',
           'id_ID',
         ).parse(_dateController.text);
       } catch (e) {
-        initialDateForPicker = initialDate;
+        initialDate = now;
       }
     } else {
-      initialDateForPicker = initialDate;
+      initialDate = now;
     }
 
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initialDateForPicker,
+      initialDate: initialDate,
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: now,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -170,7 +277,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
       backgroundColor: const Color(0xFFF7F9FC),
       body: Stack(
         children: [
-          // Latar Belakang Gradien dengan shape abstrak
+          // Latar belakang gradien
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -185,37 +292,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
             ),
             height: MediaQuery.of(context).size.height * 0.45,
           ),
-          Positioned(
-            top: 60,
-            left: -80,
-            child: Transform.rotate(
-              angle: -0.4,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(80),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 20,
-            right: -60,
-            child: Transform.rotate(
-              angle: 0.6,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-              ),
-            ),
-          ),
-          // Konten utama
           SafeArea(
             child: SingleChildScrollView(
               child: Column(
@@ -251,9 +327,13 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                                 : null,
                           ),
                           const SizedBox(height: 24),
-                          _buildDropdown(),
+                          _buildDropdown(), // Gender
                           const SizedBox(height: 24),
-                          _buildDateField(),
+                          _buildBirthHistoryDropdown(), // Riwayat kelahiran
+                          const SizedBox(height: 24),
+                          _buildGestationalAgeField(), // Usia kehamilan
+                          const SizedBox(height: 24),
+                          _buildDateField(), // Tanggal lahir
                           const SizedBox(height: 48),
                           SizedBox(
                             width: double.infinity,
@@ -277,16 +357,10 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 
-  // --- Widget Kustom yang Disesuaikan untuk UI Modern ---
-
+  /// Header
   Widget _buildHeader(bool isEdit) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 16.0,
-        left: 24.0,
-        right: 24.0,
-        bottom: 24.0,
-      ),
+      padding: const EdgeInsets.all(24.0),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -298,7 +372,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
             ),
           ),
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 isEdit ? "Edit Data Anak" : "Tambah Data Anak",
@@ -316,7 +389,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.white.withOpacity(0.8),
-                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -326,6 +398,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 
+  /// Pesan Error API
   Widget _buildErrorMessages() {
     return Container(
       width: double.infinity,
@@ -369,6 +442,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 
+  /// Input Text Generic
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -379,10 +453,7 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     style: const TextStyle(fontWeight: FontWeight.w500),
     decoration: InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(
-        color: Colors.grey,
-        fontWeight: FontWeight.normal,
-      ),
+      labelStyle: const TextStyle(color: Colors.grey),
       floatingLabelBehavior: FloatingLabelBehavior.never,
       prefixIcon: Icon(icon, color: const Color(0xFF6F51E9)),
       filled: true,
@@ -395,18 +466,11 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF6F51E9), width: 2),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
     ),
     validator: validator,
   );
 
+  /// Dropdown Gender
   Widget _buildDropdown() => DropdownButtonFormField<String>(
     value: _gender,
     items: const [
@@ -415,11 +479,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     ],
     decoration: InputDecoration(
       labelText: "Jenis Kelamin",
-      labelStyle: const TextStyle(
-        color: Colors.grey,
-        fontWeight: FontWeight.normal,
-      ),
-      floatingLabelBehavior: FloatingLabelBehavior.never,
       prefixIcon: const Icon(Icons.wc, color: Color(0xFF6F51E9)),
       filled: true,
       fillColor: Colors.grey.shade100,
@@ -427,23 +486,12 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF6F51E9), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
     ),
     onChanged: (value) => setState(() => _gender = value),
     validator: (value) => value == null ? "Pilih jenis kelamin" : null,
   );
 
+  /// Input Date
   Widget _buildDateField() => TextFormField(
     controller: _dateController,
     readOnly: true,
@@ -451,11 +499,6 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     style: const TextStyle(fontWeight: FontWeight.w500),
     decoration: InputDecoration(
       labelText: "Tanggal Lahir",
-      labelStyle: const TextStyle(
-        color: Colors.grey,
-        fontWeight: FontWeight.normal,
-      ),
-      floatingLabelBehavior: FloatingLabelBehavior.never,
       prefixIcon: const Icon(Icons.cake_outlined, color: Color(0xFF6F51E9)),
       filled: true,
       fillColor: Colors.grey.shade100,
@@ -463,66 +506,51 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide.none,
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF6F51E9), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
       suffixIcon: const Icon(Icons.calendar_today, color: Color(0xFF6F51E9)),
     ),
     validator: (value) =>
         value == null || value.isEmpty ? "Tanggal lahir wajib diisi" : null,
   );
 
+  /// Tombol Gradient
   Widget _buildGradientButton(
     String text, {
     VoidCallback? onPressed,
     bool isSaving = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
+  }) => Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF6F51E9), Color(0xFF9F7AEA)],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF6F51E9).withOpacity(0.3),
+          blurRadius: 15,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6F51E9), Color(0xFF9F7AEA)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6F51E9).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: isSaving
-                ? const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
-                : Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+        child: Center(
+          child: isSaving
+              ? const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+              : Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
-          ),
+                ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
